@@ -205,6 +205,13 @@ local function operator_mutating(source, operator)
 end
 
 local function operator_cnal(source, settings)
+	local clookups
+	if (Compiler.Legacy or settings.LEGACY) then
+		clookups = cnal_indices_legacy
+	else
+		clookups = cnal_indices
+	end
+
 	local start, finish = 0, 0
 	while (true) do
 		local prec, keys
@@ -223,7 +230,7 @@ local function operator_cnal(source, settings)
 		local lookups = {}
 		for i = 1, #keys do
 			local key = keys:sub(i, i)
-			local index = ((Callisto.Legacy or settings.LEGACY) and cnal_indices_legacy or cnal_indices)[key]
+			local index = clookups[key]
 
 			if (not index) then
 				return false, ("Invalid array lookup %q in %q!"):format(key, keys)
@@ -343,11 +350,17 @@ local function operator_defaultargs(source)
 	return source
 end
 
-local function operator_bang(source)
+local function operator_bang(source, settings)
 	return (source:gsub("([%.:%->]+)(%w+)!", function(convention, method)
-		return ("%s%sInPlace"):format(
-			convention, method
-		)
+		if (Compiler.Legacy or settings.LEGACY) then
+			return ("%s%sInPlace"):format(
+				convention, method
+			)
+		else
+			return ("%s%sBANG"):format(
+				convention, method
+			)
+		end
 	end))
 end
 
