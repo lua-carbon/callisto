@@ -394,8 +394,12 @@ Compiler.Features = {
 	operator_defaultargs,
 	operator_bang,
 	operator_cnal,
-	function(source)
-		return operator_double(source, "+")
+	function(source, settings)
+		if (Compiler.Legacy or settings.LEGACY) then
+			return operator_double(source, "+")
+		else
+			return source
+		end
 	end,
 	function(source)
 		return operator_mutating(source, "+")

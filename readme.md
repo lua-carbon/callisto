@@ -6,8 +6,8 @@ Callisto supports the following platforms:
 - LuaJIT
 
 ## Features
-- Bang methods - `object:bang!()`
-- Increment operator - `number++`
+- Bang in variables - `object:bang!()` (`object:bangBANG()` or `object:bangInPlace()` in legacy mode)
+- Increment operator - `number++` (legacy mode only)
 - Mutating operators
 	- `a += b`
 	- `a -= b`
