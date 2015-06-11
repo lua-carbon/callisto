@@ -206,7 +206,7 @@ end
 
 local function operator_cnal(source, settings)
 	local clookups
-	if (Compiler.Legacy or settings.LEGACY) then
+	if (settings.Legacy) then
 		clookups = cnal_indices_legacy
 	else
 		clookups = cnal_indices
@@ -398,7 +398,7 @@ Compiler.Features = {
 	operator_que,
 	operator_cnal,
 	function(source, settings)
-		if (Compiler.Legacy or settings.LEGACY) then
+		if (settings.Legacy) then
 			return operator_double(source, "+")
 		else
 			return source
@@ -441,13 +441,22 @@ Compiler.Extensions = {
 function Compiler.Transform(source, settings)
 	settings = settings or {}
 
+	local legacy
+	if (Callisto.Legacy or settings.Legacy) then
+		legacy = true
+	else
+		legacy = not not (source:match("#CallistoLegacy") or source:match("#CARBIDE_LEGACY"))
+	end
+
+	settings.Legacy = legacy
+
 	local extensions
-	if (settings.CALLISTO_EXTENSIONS) then
-		extensions = settings.CALLISTO_EXTENSIONS
+	if (settings.CallistoExtensions) then
+		extensions = settings.CallistoExtensions
 	else
 		extensions = {}
 
-		if (Callisto.Legacy) then
+		if (legacy) then
 			for nameset in source:gmatch("#CARBIDE_EXTENSIONS ([^\r\n]+)") do
 				for name in nameset:gmatch("[^%s,]+") do
 					table.insert(extensions, name)
@@ -455,7 +464,7 @@ function Compiler.Transform(source, settings)
 			end
 		end
 
-		for nameset in source:gmatch("#CALLISTO_EXTENSIONS ([^\r\n]+)") do
+		for nameset in source:gmatch("#CallistoExtensions ([^\r\n]+)") do
 			for name in nameset:gmatch("[^%s,]+") do
 				table.insert(extensions, name)
 			end
@@ -463,11 +472,26 @@ function Compiler.Transform(source, settings)
 	end
 
 	local report_out
-	if (settings.COMPILE_TO) then
-		report_out = settings.COMPILE_TO
+	if (legacy) then
+		if (settings.COMPILE_TO) then
+			report_out = settings.COMPILE_TO
+		else
+			local out = source:match("#COMPILE_TO ([^\r\n]+)")
+
+			if (out) then
+				report_out = out
+			end
+		end
+	end
+
+	if (settings.CompileTo) then
+		report_out = settings.CompileTo
 	else
-		local out = source:match("#COMPILE_TO ([^\r\n]+)")
-		report_out = out
+		local out = source:match("#CompileTo ([^\r\n]+)")
+
+		if (out) then
+			report_out = out
+		end
 	end
 
 	local str_tab
