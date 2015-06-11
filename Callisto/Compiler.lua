@@ -351,8 +351,8 @@ local function operator_defaultargs(source)
 end
 
 local function operator_bang(source, settings)
-	return (source:gsub("([%w_!]*)", function(banged)
-		if (Compiler.Legacy or settings.LEGACY) then
+	return (source:gsub("([%w_!]*![%w_!]*)", function(banged)
+		if (settings.Legacy) then
 			return (banged:gsub("!", "InPlace"))
 		else
 			return (banged:gsub("!", "BANG"))
@@ -361,7 +361,7 @@ local function operator_bang(source, settings)
 end
 
 local function operator_que(source, settings)
-	return (source:gsub("([%w_%?]*)", function(banged)
+	return (source:gsub("([%w_%?]*%?[%w_%?]*)", function(banged)
 		return (banged:gsub("%?", "QUE"))
 	end))
 end
@@ -442,7 +442,7 @@ function Compiler.Transform(source, settings)
 	settings = settings or {}
 
 	local legacy
-	if (Callisto.Legacy or settings.Legacy) then
+	if (Compiler.Legacy or settings.Legacy) then
 		legacy = true
 	else
 		legacy = not not (source:match("#CallistoLegacy") or source:match("#CARBIDE_LEGACY"))

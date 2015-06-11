@@ -2,7 +2,7 @@ local Callisto = (...)
 local TestUtil = Callisto.TestUtil
 
 local settings = {
-	LEGACY = true
+	Legacy = true
 }
 
 local source = [=[
