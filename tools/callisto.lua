@@ -6,6 +6,8 @@ end
 
 local Callisto = require("Callisto")
 
+local loadstring = loadstring or load
+
 local usage = [=[
 USAGE:
   callisto [input.clua [-o output.clua]] [-h] [-v] [-e main.clua] [--option=value]
@@ -137,6 +139,7 @@ end
 
 if (execfile) then
 	(function()
+		local is_callisto = not not execfile:match("%.clua$")
 		local handle, err = io.open(execfile, "rb")
 
 		if (not handle) then
@@ -148,15 +151,27 @@ if (execfile) then
 			local body = handle:read("*a")
 			handle:close()
 
-			local chunk, err = Callisto.Compile(body, settings)
+			if (is_callisto) then
+				local chunk, err = Callisto.Compile(body, settings)
 
-			if (not chunk) then
-				print(("Compilation error in %s: %s"):format(execfile, err))
-				return
+				if (not chunk) then
+					print(("Compilation error in %s: %s"):format(execfile, err))
+					return
+				end
+
+				vprint(("Executing as Callisto: %s"):format(execfile))
+				chunk()
+			else
+				local chunk, err = loadstring(body)
+
+				if (not chunk) then
+					print(("Compilation error in %s: %s"):format(execfile, err))
+					return
+				end
+
+				vprint(("Executing as Lua: %s"):format(execfile))
+				chunk()
 			end
-
-			vprint(("Executing %s"):format(execfile))
-			chunk()
 		end
 	end)()
 end
