@@ -5,7 +5,9 @@ function hello()
 	print("hello, world")
 end
 
-hello()
+if true then
+	hello()
+end
 ]=]
 
 local state = Compiler.Parse(body)

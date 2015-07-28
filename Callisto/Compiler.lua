@@ -177,7 +177,9 @@ match = {
 			local value, key = match_any(state,
 				make_match_keyword("end"),
 				match.spaces,
-				match.statement
+				match.statement,
+				match.ifthen,
+				match.whiledo
 			)
 
 			if (not value or value == "") then
@@ -202,6 +204,8 @@ match = {
 			match.identifier,
 			match.string,
 			match.number,
+			match.constant,
+			match.function_definition,
 			match.function_call,
 			make_match_chain(
 				make_match_keyword("("),
@@ -224,12 +228,20 @@ match = {
 		return true
 	end,
 
+	constant = function(state)
+		return match_any(state,
+			make_match_keyword("true"),
+			make_match_keyword("false"),
+			make_match_keyword("nil")
+		)
+	end,
+
 	number = function(state)
-		return false
+		--TODO
 	end,
 
 	string = function(state)
-		return false
+		--TODO
 	end,
 
 	identifier = function(state)
@@ -306,7 +318,35 @@ match = {
 	end,
 
 	ifthen = function(state)
+		return match_chain(state,
+			make_match_keyword("if"),
+			make_match_maybe(match.spaces),
+			match.expression,
+			make_match_maybe(match.spaces),
+			make_match_keyword("then"),
+			util.start_block,
+			match.block
+		)
+	end,
 
+	whiledo = function(state)
+		return match_chain(state,
+			make_match_keyword("while"),
+			make_match_maybe(match.spaces),
+			match.expression,
+			make_match_maybe(match.spaces),
+			make_match_keyword("do"),
+			util.start_block,
+			match.block
+		)
+	end,
+
+	fordo = function(state)
+		--TODO
+	end,
+
+	forindo = function(state)
+		--TODO
 	end
 }
 
