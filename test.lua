@@ -5,8 +5,10 @@ function hello()
 	print("hello, world")
 end
 
-if true then
-	hello()
+while (true) do
+	if (true) then
+		hello()
+	end
 end
 ]=]
 
