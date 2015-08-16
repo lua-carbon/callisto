@@ -84,4 +84,17 @@ function Match.zeroPlus(matcher)
 	end
 end
 
+function Match.pattern(pattern)
+	return function(state)
+		local sub = state:peekPattern(pattern)
+
+		if (sub and sub ~= "") then
+			state:eat(#sub)
+			return true
+		end
+
+		return false
+	end
+end
+
 return Match

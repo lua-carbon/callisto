@@ -29,7 +29,8 @@ grammar = {
 				grammar.spaces,
 				grammar.statement,
 				grammar.ifthen,
-				grammar.whiledo
+				grammar.whiledo,
+				grammar.fordo
 			)(state)
 
 			if (not value or value == "") then
@@ -50,19 +51,35 @@ grammar = {
 	end,
 
 	expression = function(state)
-		return Match.any(
-			grammar.identifier,
-			grammar.string,
-			grammar.number,
-			grammar.constant,
-			grammar.function_definition,
-			grammar.function_call,
-			Match.chain(
-				Match.keyword("("),
-				Match.maybe(grammar.spaces),
-				grammar.expression,
-				Match.maybe(grammar.spaces),
-				Match.keyword(")")
+		return Match.chain(
+			Match.maybe(grammar.spaces),
+			Match.any(
+				grammar.identifier,
+				grammar.string,
+				grammar.number,
+				grammar.constant,
+				grammar.function_definition,
+				grammar.function_call,
+				Match.chain(
+					Match.keyword("("),
+					Match.maybe(grammar.spaces),
+					grammar.expression,
+					Match.maybe(grammar.spaces),
+					Match.keyword(")")
+				)
+			),
+			Match.maybe(grammar.spaces)
+		)(state)
+	end,
+
+	explist = function(state)
+		return Match.chain(
+			grammar.expression,
+			Match.zeroMore(
+				Match.chain(
+					Match.keyword(","),
+					grammar.expression
+				)
 			)
 		)(state)
 	end,
@@ -87,7 +104,8 @@ grammar = {
 	end,
 
 	number = function(state)
-		--TODO
+		-- TODO: better number pattern
+		return Match.pattern("%d+")(state)
 	end,
 
 	string = function(state)
@@ -119,7 +137,8 @@ grammar = {
 		return has
 	end,
 
-	idlist = function(state)
+	-- Matches balanced parens
+	parenthed = function(state)
 		local value = state:peekPattern("%(")
 
 		if (not value or value == "") then
@@ -154,7 +173,7 @@ grammar = {
 			grammar.spaces,
 			grammar.identifier,
 			Match.maybe(grammar.spaces),
-			grammar.idlist,
+			grammar.parenthed,
 			State.startBlock,
 			grammar.block
 		)(state)
@@ -163,7 +182,7 @@ grammar = {
 	function_call = function(state)
 		return Match.chain(
 			grammar.identifier,
-			grammar.idlist
+			grammar.parenthed
 		)(state)
 	end,
 
@@ -192,7 +211,26 @@ grammar = {
 	end,
 
 	fordo = function(state)
-		--TODO
+		return Match.chain(
+			Match.keyword("for"),
+			Match.maybe(grammar.spaces),
+			grammar.identifier,
+			Match.maybe(grammar.spaces),
+			Match.keyword("="),
+			grammar.expression,
+			Match.keyword(","),
+			grammar.expression,
+			Match.maybe(
+				Match.chain(
+					Match.keyword(","),
+					grammar.expression
+				)
+			),
+			Match.maybe(grammar.spaces),
+			Match.keyword("do"),
+			State.startBlock,
+			grammar.block
+		)(state)
 	end,
 
 	forindo = function(state)
@@ -200,7 +238,7 @@ grammar = {
 	end
 }
 
-function Compiler.Parse(body)
+function Compiler.parse(body)
 	local state = State:new(body)
 	print("statement", grammar.block(state))
 
