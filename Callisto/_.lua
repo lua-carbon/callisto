@@ -10,7 +10,7 @@
 local Callisto = (...)
 local Compiler = Callisto.Compiler
 
-Callisto.Version = {1, 0, 0}
+Callisto.Version = {2, 0, 0}
 
 Callisto.VersionString = ("%s.%s.%s%s%s"):format(
 	Callisto.Version[1],
@@ -19,14 +19,6 @@ Callisto.VersionString = ("%s.%s.%s%s%s"):format(
 	Callisto.Version[4] and "-" or "",
 	Callisto.Version[4] or ""
 )
-
--- In (string source, [table settings])
--- Out (string source, table sourcemap)
-Callisto.Transform = Compiler.Transform
-
--- In (string source, [table sourcemap])
--- Out (function? chunk, string? error)
-Callisto.LoadString = Compiler.LoadString
 
 -- In (string source, [table settings])
 -- Out (function? chunk, string? error)

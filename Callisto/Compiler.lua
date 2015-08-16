@@ -2,77 +2,24 @@
 	Callisto Compiler 2.0.0
 ]]
 
+local Callisto = (...)
+local State = Callisto.State
+
 local Compiler = {}
 
 local KEYWORDS = {"if", "then", "else", "elseif", "end", "function", "while", "for", "do", "repeat", "until"}
 
-local State = {
-	peek = function(self, count)
-		count = count or 1
-
-		return self.body:sub(self.pos, self.pos + count - 1)
-	end,
-
-	pop = function(self, count)
-		count = count or 1
-
-		local opos = self.pos
-		self.pos = self.pos + count
-
-		return self.body:sub(opos, opos + count - 1)
-	end,
-
-	eat = function(self, count)
-		self.pos = self.pos + count
-	end,
-
-	peek_pattern = function(self, pattern)
-		return self.body:match("^" .. pattern, self.pos)
-	end,
-
-	pend = function(self)
-		table.insert(self.pos_pending, self.pos)
-	end,
-
-	accept = function(self)
-		table.remove(self.pos_pending)
-	end,
-
-	reject = function(self)
-		self.pos = table.remove(self.pos_pending)
-	end
-}
-
-Compiler.State = State
-
 local util = {
 	start_block = function(state)
-		state.block_depth = state.block_depth + 1
+		state.blockDepth = state.blockDepth + 1
 		return true
 	end,
 
 	end_block = function(state)
-		state.block_depth = state.block_depth - 1
+		state.blockDepth = state.blockDepth - 1
 		return true
 	end
 }
-
-local function make_state(string)
-	local new = setmetatable({}, {
-		__index = State
-	})
-
-	new.pos_pending = {}
-	new.body = string
-	new.pos = 1
-	new.tree = {}
-	new.treepos = new.tree
-	new.block_depth = 0
-
-	return new
-end
-
-Compiler.State.new = make_state
 
 local function make_match_keyword(keyword)
 	local len = #keyword
@@ -171,7 +118,7 @@ match = {
 	end,
 
 	block = function(state)
-		local start_depth = state.block_depth
+		local start_depth = state.blockDepth
 
 		while (true) do
 			local value, key = match_any(state,
@@ -192,7 +139,7 @@ match = {
 
 			if (key == 1) then
 				util.end_block(state)
-				if (state.block_depth < start_depth) then
+				if (state.blockDepth < start_depth) then
 					return true
 				end
 			end
@@ -218,7 +165,7 @@ match = {
 	end,
 
 	spaces = function(state)
-		local value = state:peek_pattern("[%s]+")
+		local value = state:peekPattern("[%s]+")
 
 		if (not value or value == "") then
 			return false
@@ -251,9 +198,9 @@ match = {
 
 		while (true) do
 			if (has) then
-				value = state:peek_pattern("[%w_]+")
+				value = state:peekPattern("[%w_]+")
 			else
-				value = state:peek_pattern("[%a_]+")
+				value = state:peekPattern("[%a_]+")
 			end
 
 			if (not value or value == "") then
@@ -270,7 +217,7 @@ match = {
 	end,
 
 	idlist = function(state)
-		local value = state:peek_pattern("%(")
+		local value = state:peekPattern("%(")
 
 		if (not value or value == "") then
 			return false
@@ -351,7 +298,7 @@ match = {
 }
 
 function Compiler.Parse(body)
-	local state = make_state(body)
+	local state = State:new(body)
 	print("statement", match.block(state))
 
 	return state
