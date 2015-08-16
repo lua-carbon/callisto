@@ -14,10 +14,10 @@ local grammar
 grammar = {
 	statement = function(state)
 		return Match.any(
-				grammar.spaces,
-				grammar.function_definition,
-				grammar.function_call
-			)(state)
+			grammar.spaces,
+			grammar.function_definition,
+			grammar.function_call
+		)(state)
 	end,
 
 	block = function(state)
