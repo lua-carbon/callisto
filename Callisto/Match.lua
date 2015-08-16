@@ -2,6 +2,16 @@ local Callisto = (...)
 
 local Match = {}
 
+function Match.ensure(item)
+	if (type(item) == "function") then
+		return item
+	elseif (type(item) == "string") then
+		return Match.keyword(item)
+	else
+		return item
+	end
+end
+
 function Match.keyword(keyword)
 	local len = #keyword
 
@@ -22,7 +32,9 @@ function Match.chain(...)
 		state:pend()
 
 		for i = 1, #matchers do
-			if (not matchers[i](state)) then
+			local matcher = Match.ensure(matchers[i])
+
+			if (not matcher(state)) then
 				state:reject()
 				return false
 			end
@@ -39,7 +51,10 @@ function Match.any(...)
 
 	return function(state)
 		for i = 1, #matchers do
-			if (matchers[i](state)) then
+			local matcher = Match.ensure(matchers[i])
+			local val = matcher(state)
+
+			if (val) then
 				return true, i
 			end
 		end
@@ -49,6 +64,8 @@ function Match.any(...)
 end
 
 function Match.maybe(matcher)
+	matcher = Match.ensure(matcher)
+
 	return function(state)
 		matcher(state)
 
@@ -57,6 +74,8 @@ function Match.maybe(matcher)
 end
 
 function Match.onePlus(matcher)
+	matcher = Match.ensure(matcher)
+
 	return function(state)
 		local value = matcher(state)
 
@@ -73,6 +92,8 @@ function Match.onePlus(matcher)
 end
 
 function Match.zeroPlus(matcher)
+	matcher = Match.ensure(matcher)
+
 	return function(state)
 		local value
 

@@ -30,7 +30,8 @@ grammar = {
 				grammar.statement,
 				grammar.ifthen,
 				grammar.whiledo,
-				grammar.fordo
+				grammar.fordo,
+				grammar.forindo
 			)(state)
 
 			if (not value or value == "") then
@@ -54,12 +55,13 @@ grammar = {
 		return Match.chain(
 			Match.maybe(grammar.spaces),
 			Match.any(
+				grammar.function_definition,
+				grammar.function_call,
 				grammar.identifier,
 				grammar.string,
 				grammar.number,
 				grammar.constant,
-				grammar.function_definition,
-				grammar.function_call,
+				grammar.table,
 				Match.chain(
 					Match.keyword("("),
 					Match.maybe(grammar.spaces),
@@ -72,13 +74,29 @@ grammar = {
 		)(state)
 	end,
 
+	-- Match a comma-separated list of expressions
 	explist = function(state)
 		return Match.chain(
 			grammar.expression,
-			Match.zeroMore(
+			Match.zeroPlus(
 				Match.chain(
 					Match.keyword(","),
 					grammar.expression
+				)
+			)
+		)(state)
+	end,
+
+	-- Match a comma-separated list of identifiers
+	idlist = function(state)
+		return Match.chain(
+			grammar.identifier,
+			Match.zeroPlus(
+				Match.chain(
+					Match.maybe(grammar.spaces),
+					Match.keyword(","),
+					Match.maybe(grammar.spaces),
+					grammar.identifier
 				)
 			)
 		)(state)
@@ -104,12 +122,32 @@ grammar = {
 	end,
 
 	number = function(state)
-		-- TODO: better number pattern
-		return Match.pattern("%d+")(state)
+		local digits = Match.pattern("%d+")
+		local exp = Match.any("e", "E")
+		local mpm = Match.maybe(Match.any("+", "-"))
+
+		return Match.chain(
+			mpm,
+			digits,
+			Match.maybe(Match.chain(
+				Match.keyword("."),
+				digits
+			)),
+			Match.maybe(Match.chain(
+				exp,
+				mpm,
+				digits
+			))
+		)(state)
 	end,
 
 	string = function(state)
 		--TODO
+	end,
+
+	table = function(state)
+		--TODO: actual implementation
+		return grammar.braced(state)
 	end,
 
 	identifier = function(state)
@@ -135,6 +173,36 @@ grammar = {
 		end
 
 		return has
+	end,
+
+	-- Matches balanced braces
+	braced = function(state)
+		local value = state:peekPattern("%{")
+
+		if (not value or value == "") then
+			return false
+		end
+
+		state:eat(1)
+
+		local depth = 0
+		while (true) do
+			value = state:pop(1)
+
+			if (not value or value == "") then
+				return false
+			end
+
+			if (value == "}") then
+				depth = depth + 1
+			elseif (value == ")") then
+				if (depth <= 0) then
+					break
+				end
+			end
+		end
+
+		return true
 	end,
 
 	-- Matches balanced parens
@@ -234,9 +302,28 @@ grammar = {
 	end,
 
 	forindo = function(state)
-		--TODO
+		return Match.chain(
+			"for",
+			Match.maybe(grammar.spaces),
+			grammar.idlist,
+			Match.maybe(grammar.spaces),
+			"in",
+			Match.maybe(grammar.spaces),
+			grammar.expression,
+			"do",
+			State.startBlock,
+			grammar.block
+		)(state)
 	end
 }
+
+-- Debug tracing
+-- for key, value in pairs(grammar) do
+-- 	grammar[key] = function(...)
+-- 		print("grammar", key)
+-- 		return value(...)
+-- 	end
+-- end
 
 function Compiler.parse(body)
 	local state = State:new(body)
