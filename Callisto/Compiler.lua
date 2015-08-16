@@ -4,130 +4,33 @@
 
 local Callisto = (...)
 local State = Callisto.State
+local Match = Callisto.Match
 
 local Compiler = {}
 
 local KEYWORDS = {"if", "then", "else", "elseif", "end", "function", "while", "for", "do", "repeat", "until"}
 
-local util = {
-	start_block = function(state)
-		state.blockDepth = state.blockDepth + 1
-		return true
-	end,
-
-	end_block = function(state)
-		state.blockDepth = state.blockDepth - 1
-		return true
-	end
-}
-
-local function make_match_keyword(keyword)
-	local len = #keyword
-
-	return function(state)
-		local possible = state:peek(len)
-
-		if (possible == keyword) then
-			state:eat(len)
-			return true
-		end
-	end
-end
-
-local function make_match_chain(...)
-	local matchers = {...}
-
-	return function(state)
-		state:pend()
-
-		for i = 1, #matchers do
-			if (not matchers[i](state)) then
-				state:reject()
-				return false
-			end
-		end
-
-		state:accept()
-
-		return true
-	end
-end
-
-local function match_chain(state, ...)
-	return make_match_chain(...)(state)
-end
-
-local function make_match_any(...)
-	local matchers = {...}
-
-	return function(state)
-		for i = 1, #matchers do
-			if (matchers[i](state)) then
-				return true, i
-			end
-		end
-
-		return false
-	end
-end
-
-local function match_any(state, ...)
-	return make_match_any(...)(state)
-end
-
-local function make_match_maybe(matcher)
-	return function(state)
-		matcher(state)
-
-		return true
-	end
-end
-
-local function match_oneplus(state, matcher)
-	local value = matcher(state)
-
-	if (not value) then
-		return false
-	end
-
-	repeat
-		value = matcher(state)
-	until not value
-
-	return true
-end
-
-local function match_zeroplus(state, matcher)
-	local value
-
-	repeat
-		value = matcher(state)
-	until not value
-
-	return true
-end
-
-local match
-match = {
+local grammar
+grammar = {
 	statement = function(state)
-		return match_any(state,
-				match.spaces,
-				match.function_definition,
-				match.function_call
-			)
+		return Match.any(
+				grammar.spaces,
+				grammar.function_definition,
+				grammar.function_call
+			)(state)
 	end,
 
 	block = function(state)
 		local start_depth = state.blockDepth
 
 		while (true) do
-			local value, key = match_any(state,
-				make_match_keyword("end"),
-				match.spaces,
-				match.statement,
-				match.ifthen,
-				match.whiledo
-			)
+			local value, key = Match.any(
+				Match.keyword("end"),
+				grammar.spaces,
+				grammar.statement,
+				grammar.ifthen,
+				grammar.whiledo
+			)(state)
 
 			if (not value or value == "") then
 				if (start_depth > 0) then
@@ -138,7 +41,7 @@ match = {
 			end
 
 			if (key == 1) then
-				util.end_block(state)
+				state:endBlock()
 				if (state.blockDepth < start_depth) then
 					return true
 				end
@@ -147,21 +50,21 @@ match = {
 	end,
 
 	expression = function(state)
-		return match_any(state,
-			match.identifier,
-			match.string,
-			match.number,
-			match.constant,
-			match.function_definition,
-			match.function_call,
-			make_match_chain(
-				make_match_keyword("("),
-				make_match_maybe(match.spaces),
-				match.expression,
-				make_match_maybe(match.spaces),
-				make_match_keyword(")")
+		return Match.any(
+			grammar.identifier,
+			grammar.string,
+			grammar.number,
+			grammar.constant,
+			grammar.function_definition,
+			grammar.function_call,
+			Match.chain(
+				Match.keyword("("),
+				Match.maybe(grammar.spaces),
+				grammar.expression,
+				Match.maybe(grammar.spaces),
+				Match.keyword(")")
 			)
-		)
+		)(state)
 	end,
 
 	spaces = function(state)
@@ -176,11 +79,11 @@ match = {
 	end,
 
 	constant = function(state)
-		return match_any(state,
-			make_match_keyword("true"),
-			make_match_keyword("false"),
-			make_match_keyword("nil")
-		)
+		return Match.any(
+			Match.keyword("true"),
+			Match.keyword("false"),
+			Match.keyword("nil")
+		)(state)
 	end,
 
 	number = function(state)
@@ -246,46 +149,46 @@ match = {
 	end,
 
 	function_definition = function(state)
-		return match_chain(state,
-			make_match_keyword("function"),
-			match.spaces,
-			match.identifier,
-			make_match_maybe(match.spaces),
-			match.idlist,
-			util.start_block,
-			match.block
-		)
+		return Match.chain(
+			Match.keyword("function"),
+			grammar.spaces,
+			grammar.identifier,
+			Match.maybe(grammar.spaces),
+			grammar.idlist,
+			State.startBlock,
+			grammar.block
+		)(state)
 	end,
 
 	function_call = function(state)
-		return match_chain(state,
-			match.identifier,
-			match.idlist
-		)
+		return Match.chain(
+			grammar.identifier,
+			grammar.idlist
+		)(state)
 	end,
 
 	ifthen = function(state)
-		return match_chain(state,
-			make_match_keyword("if"),
-			make_match_maybe(match.spaces),
-			match.expression,
-			make_match_maybe(match.spaces),
-			make_match_keyword("then"),
-			util.start_block,
-			match.block
-		)
+		return Match.chain(
+			Match.keyword("if"),
+			Match.maybe(grammar.spaces),
+			grammar.expression,
+			Match.maybe(grammar.spaces),
+			Match.keyword("then"),
+			State.startBlock,
+			grammar.block
+		)(state)
 	end,
 
 	whiledo = function(state)
-		return match_chain(state,
-			make_match_keyword("while"),
-			make_match_maybe(match.spaces),
-			match.expression,
-			make_match_maybe(match.spaces),
-			make_match_keyword("do"),
-			util.start_block,
-			match.block
-		)
+		return Match.chain(
+			Match.keyword("while"),
+			Match.maybe(grammar.spaces),
+			grammar.expression,
+			Match.maybe(grammar.spaces),
+			Match.keyword("do"),
+			State.startBlock,
+			grammar.block
+		)(state)
 	end,
 
 	fordo = function(state)
@@ -299,7 +202,7 @@ match = {
 
 function Compiler.Parse(body)
 	local state = State:new(body)
-	print("statement", match.block(state))
+	print("statement", grammar.block(state))
 
 	return state
 end

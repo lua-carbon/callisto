@@ -51,6 +51,16 @@ local State = {
 
 	reject = function(self)
 		self.pos = table.remove(self.posPending)
+	end,
+
+	startBlock = function(self)
+		self.blockDepth = self.blockDepth + 1
+		return true
+	end,
+
+	endBlock = function(self)
+		self.blockDepth = self.blockDepth - 1
+		return true
 	end
 }
 
