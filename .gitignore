@@ -1,4 +1,6 @@
 # CUSTOM BUILD
+main.lua
+main.clua
 main.compiled.lua
 conf.lua
 bin/
