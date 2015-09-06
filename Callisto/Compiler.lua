@@ -31,7 +31,9 @@ grammar = {
 				grammar.ifthen,
 				grammar.whiledo,
 				grammar.fordo,
-				grammar.forindo
+				grammar.forindo,
+				grammar.elseblock,
+				grammar.elseifblock
 			)(state)
 
 			if (not value or value == "") then
@@ -266,6 +268,25 @@ grammar = {
 		)(state)
 	end,
 
+	elseblock = function(state)
+		return Match.chain(
+			Match.maybe(grammar.spaces),
+			Match.keyword("else"),
+			Match.nope("if"),
+			Match.maybe(grammar.spaces)
+		)(state)
+	end,
+
+	elseifblock = function(state)
+		return Match.chain(
+			Match.keyword("elseif"),
+			Match.maybe(grammar.spaces),
+			grammar.expression,
+			Match.maybe(grammar.spaces),
+			Match.keyword("then")
+		)(state)
+	end,
+
 	whiledo = function(state)
 		return Match.chain(
 			Match.keyword("while"),
@@ -327,7 +348,7 @@ grammar = {
 
 function Compiler.parse(body)
 	local state = State:new(body)
-	print("statement", grammar.block(state))
+	grammar.block(state)
 
 	return state
 end

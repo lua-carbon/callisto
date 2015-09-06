@@ -1,0 +1,5 @@
+# CUSTOM BUILD
+main.compiled.lua
+conf.lua
+bin/
+*.exe

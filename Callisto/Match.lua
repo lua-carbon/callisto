@@ -25,6 +25,22 @@ function Match.keyword(keyword)
 	end
 end
 
+function Match.nope(matcher)
+	matcher = Match.ensure(matcher)
+
+	return function(state)
+		state:pend()
+
+		if (matcher(state)) then
+			state:reject()
+			return false
+		end
+
+		state:accept()
+		return true
+	end
+end
+
 function Match.chain(...)
 	local matchers = {...}
 
