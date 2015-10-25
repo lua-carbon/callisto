@@ -2,6 +2,49 @@ local Callisto = (...)
 
 local Match = {}
 
+function Match.astUnblock(data, bound)
+	return function(state)
+		local last = state:popLeaf()
+		local id = state:addLeaf(data, true)
+		local result = bound(state)
+
+		if (not result) then
+			state:popLeaf()
+			state:removeLeaf(id)
+			state:navLeaf(last)
+		end
+
+		return result
+	end
+end
+
+function Match.astBlock(data, bound)
+	return function(state)
+		local id = state:addLeaf(data, true)
+		local result = bound(state)
+
+		if (not result) then
+			state:popLeaf()
+			state:removeLeaf(id)
+		end
+
+		return result
+	end
+end
+
+function Match.ast(data, bound)
+	return function(state)
+		local id = state:addLeaf(data)
+		local result = bound(state)
+
+		if (not result) then
+			state:removeLeaf(id)
+		end
+
+		return result
+	end
+end
+
 function Match.ensure(item)
 	if (type(item) == "function") then
 		return item

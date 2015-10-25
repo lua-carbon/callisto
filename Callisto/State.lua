@@ -1,4 +1,5 @@
 local Callisto = (...)
+local AST = Callisto.AST
 
 local State = {
 	pos = 1,
@@ -8,14 +9,39 @@ local State = {
 		local new = setmetatable({
 			posPending = {},
 			body = body,
-			tree = {}
+			tree = AST.block()
 		}, {
 			__index = self
 		})
 
-		new.treePos = new.tree
+		new.treePos = {new.tree}
 
 		return new
+	end,
+
+	navLeaf = function(self, leaf)
+		table.insert(self.treePos, leaf)
+	end,
+
+	addLeaf = function(self, leaf, dive)
+		local now = self.treePos[#self.treePos]
+
+		table.insert(now.value, leaf)
+
+		if (dive) then
+			table.insert(self.treePos, leaf)
+		end
+
+		return #now.value
+	end,
+
+	removeLeaf = function(self, index)
+		local now = self.treePos[#self.treePos]
+		return table.remove(now.value, index)
+	end,
+
+	popLeaf = function(self)
+		return table.remove(self.treePos)
 	end,
 
 	peek = function(self, count)

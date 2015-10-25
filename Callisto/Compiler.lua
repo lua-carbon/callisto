@@ -5,6 +5,7 @@
 local Callisto = (...)
 local State = Callisto.State
 local Match = Callisto.Match
+local AST = Callisto.AST
 
 local Compiler = {}
 
@@ -46,6 +47,7 @@ grammar = {
 
 			if (key == 1) then
 				state:endBlock()
+
 				if (state.blockDepth < start_depth) then
 					return true
 				end
@@ -257,23 +259,29 @@ grammar = {
 	end,
 
 	ifthen = function(state)
-		return Match.chain(
-			Match.keyword("if"),
-			Match.maybe(grammar.spaces),
-			grammar.expression,
-			Match.maybe(grammar.spaces),
-			Match.keyword("then"),
-			State.startBlock,
-			grammar.block
+		return Match.astBlock(
+			AST.block("ifthen"),
+			Match.chain(
+				Match.keyword("if"),
+				Match.maybe(grammar.spaces),
+				grammar.expression,
+				Match.maybe(grammar.spaces),
+				Match.keyword("then"),
+				State.startBlock,
+				grammar.block
+			)
 		)(state)
 	end,
 
 	elseblock = function(state)
-		return Match.chain(
-			Match.maybe(grammar.spaces),
-			Match.keyword("else"),
-			Match.nope("if"),
-			Match.maybe(grammar.spaces)
+		return Match.astUnblock(
+			AST.block("else"),
+			Match.chain(
+				Match.maybe(grammar.spaces),
+				Match.keyword("else"),
+				Match.nope("if"),
+				Match.maybe(grammar.spaces)
+			)
 		)(state)
 	end,
 
